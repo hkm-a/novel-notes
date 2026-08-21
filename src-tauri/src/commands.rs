@@ -254,6 +254,17 @@ pub fn delete_book(book_id: String, state: State<'_, AppState>) -> Result<(), St
 }
 
 #[tauri::command]
+pub fn update_book(
+    book_id: String,
+    title: String,
+    author: String,
+    state: State<'_, AppState>,
+) -> Result<BookDetail, String> {
+    state.storage.update_book(&book_id, &title, &author)?;
+    state.storage.get_book(&book_id)
+}
+
+#[tauri::command]
 pub fn generate_chapter(
     book_id: String,
     chapter_id: String,

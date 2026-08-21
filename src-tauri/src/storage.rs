@@ -294,6 +294,21 @@ impl Storage {
         Ok(())
     }
 
+    pub fn update_book(&self, id: &str, title: &str, author: &str) -> Result<(), String> {
+        let ts = now();
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        let changed = conn
+            .execute(
+                "UPDATE books SET title = ?1, author = ?2, updated_at = ?3 WHERE id = ?4",
+                rusqlite::params![title, author, ts, id],
+            )
+            .map_err(|e| e.to_string())?;
+        if changed == 0 {
+            return Err("书籍不存在".into());
+        }
+        Ok(())
+    }
+
     pub fn chapter_row(&self, id: &str) -> Result<Option<ChapterRow>, String> {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
         let row = conn

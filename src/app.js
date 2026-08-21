@@ -7,6 +7,7 @@
     activeJobs: new Map(),
     pollTimer: null,
     settings: null,
+    renameBookId: null,
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -106,9 +107,21 @@
           <div class="progress-track">
             <div class="progress-fill" style="width:${pct}%"></div>
           </div>
+          <div class="book-card-actions">
+            <button class="btn btn-mini" data-action="rename">重命名</button>
+            <button class="btn btn-mini btn-danger" data-action="delete">删除</button>
+          </div>
         </div>
       `;
       card.addEventListener("click", () => openBook(book.id));
+      card.querySelector('[data-action="rename"]').addEventListener("click", (e) => {
+        e.stopPropagation();
+        openRenameModal(book);
+      });
+      card.querySelector('[data-action="delete"]').addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteBook(book);
+      });
       bookGrid.appendChild(card);
     }
   }
@@ -152,8 +165,17 @@
         <div class="progress-track" style="margin-top:16px;max-width:420px">
           <div class="progress-fill" style="width:${pct}%"></div>
         </div>
+        <div class="book-header-actions">
+          <button class="btn btn-ghost" id="renameBookBtn">✎ 重命名</button>
+          <button class="btn btn-ghost btn-danger" id="deleteBookBtn">删除书籍</button>
+        </div>
       </div>
     `;
+
+    const renameBtn = document.getElementById("renameBookBtn");
+    const deleteBtn = document.getElementById("deleteBookBtn");
+    if (renameBtn) renameBtn.addEventListener("click", () => openRenameModal(book));
+    if (deleteBtn) deleteBtn.addEventListener("click", () => deleteBook(book));
 
     chapterList.innerHTML = "";
     for (const ch of book.chapters || []) {
@@ -335,6 +357,60 @@
     renderBook();
   }
 
+  /* ---------------- Book management ---------------- */
+
+  function openRenameModal(book) {
+    state.renameBookId = book.id;
+    $("#renameTitle").value = book.title || "";
+    $("#renameAuthor").value = book.author || "";
+    $("#renameModal").classList.remove("hidden");
+  }
+
+  function closeRenameModal() {
+    state.renameBookId = null;
+    $("#renameModal").classList.add("hidden");
+  }
+
+  async function saveRename() {
+    if (!state.renameBookId) return;
+    const bookId = state.renameBookId;
+    const title = $("#renameTitle").value.trim();
+    if (!title) {
+      showToast("书名不能为空", "error");
+      return;
+    }
+    const author = $("#renameAuthor").value.trim();
+    try {
+      const updated = await api("update_book", { bookId, title, author });
+      closeRenameModal();
+      if (state.currentBook && state.currentBook.id === bookId) {
+        state.currentBook = updated;
+        renderBook();
+      }
+      await loadBooks();
+      showToast("书籍信息已更新", "success");
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  }
+
+  async function deleteBook(book) {
+    const ok = window.confirm(`确定删除《${book.title}》吗？\n删除后无法恢复。`);
+    if (!ok) return;
+    try {
+      await api("delete_book", { bookId: book.id });
+      if (state.currentBook && state.currentBook.id === book.id) {
+        state.currentBook = null;
+        bookView.classList.add("hidden");
+        libraryView.classList.remove("hidden");
+      }
+      await loadBooks();
+      showToast(`已删除《${book.title}》`, "success");
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  }
+
   /* ---------------- Import ---------------- */
 
   async function importPath(path) {
@@ -491,6 +567,8 @@
   $("#settingsBtn").addEventListener("click", openSettings);
   $("#saveSettingsBtn").addEventListener("click", saveSettings);
   $$("[data-close-settings]").forEach((btn) => btn.addEventListener("click", closeSettings));
+  $("#saveRenameBtn").addEventListener("click", saveRename);
+  $$("[data-close-rename]").forEach((btn) => btn.addEventListener("click", closeRenameModal));
   $("#backBtn").addEventListener("click", () => {
     bookView.classList.add("hidden");
     libraryView.classList.remove("hidden");

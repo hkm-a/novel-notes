@@ -100,6 +100,28 @@
     </div>
   </div>
 
+  <!-- 重命名书籍弹窗 -->
+  <div id="renameModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>重命名书籍</h2>
+        <button class="modal-close" data-close-rename>×</button>
+      </div>
+      <div class="modal-body">
+        <label>书名
+          <input id="renameTitle" type="text" />
+        </label>
+        <label>作者
+          <input id="renameAuthor" type="text" placeholder="可选" />
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-close-rename>取消</button>
+        <button id="saveRenameBtn" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toastContainer" class="toast-container"></div>
 
   <script src="./app.js"></script>

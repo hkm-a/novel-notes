@@ -41,6 +41,7 @@ pub fn run() {
             commands::get_book,
             commands::import_path,
             commands::delete_book,
+            commands::update_book,
             commands::generate_chapter,
             commands::generate_all,
             commands::list_jobs,

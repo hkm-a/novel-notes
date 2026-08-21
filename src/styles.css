@@ -109,6 +109,26 @@ body { padding-bottom: 40px; }
   transform: none;
 }
 
+.btn-mini {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.btn-mini:hover { color: var(--text); background: rgba(255,255,255,.09); }
+
+.btn-danger {
+  color: #fca5a5 !important;
+  border-color: rgba(248,113,113,.35) !important;
+  background: rgba(248,113,113,.08) !important;
+}
+
+.btn-danger:hover { background: rgba(248,113,113,.15) !important; }
+
 /* ---------- Layout ---------- */
 main {
   max-width: 1200px;
@@ -234,6 +254,12 @@ main {
 
 .book-body { padding: 14px 16px 16px; }
 
+.book-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .book-meta {
   display: flex;
   justify-content: space-between;
@@ -313,6 +339,12 @@ main {
 .stat-chip strong { color: var(--text); }
 
 .book-actions { margin-bottom: 20px; }
+
+.book-header-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
 
 /* ---------- Chapter list ---------- */
 .chapter-list { display: flex; flex-direction: column; gap: 12px; }
