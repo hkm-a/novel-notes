@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+dist/
+build/
+notes/
+chapters/
+*.log
+data/
+src-tauri/target/
+src-tauri/gen/

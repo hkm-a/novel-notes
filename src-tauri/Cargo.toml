@@ -1,0 +1,25 @@
+[package]
+name = "novel-notes"
+version = "0.2.0"
+description = "TXT 小说按章节生成读书笔记桌面应用"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+encoding_rs = "0.8"
+reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"], default-features = false }
+rusqlite = { version = "0.31", features = ["bundled"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+rfd = "0.15"
+
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true

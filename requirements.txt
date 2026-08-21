@@ -1,0 +1,2 @@
+requests>=2.31
+charset-normalizer>=3.0

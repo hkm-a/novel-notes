@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novel Notes · 小说笔记工作台</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">���</span>
+      <span>Novel Notes</span>
+    </div>
+    <div class="topbar-actions">
+      <span id="modelBadge" class="model-badge">agnes</span>
+      <button id="settingsBtn" class="btn btn-ghost">⚙️ 模型设置</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- 书库视图 -->
+    <section id="libraryView">
+      <div class="page-head">
+        <h1>我的书库</h1>
+        <p class="subtitle">拖入 TXT 小说，自动识别章节并逐章生成笔记</p>
+      </div>
+
+      <div id="dropZone" class="drop-zone">
+        <div class="drop-icon">���</div>
+        <div class="drop-title">拖拽 TXT 小说到这里</div>
+        <div class="drop-sub">或 <label class="linklike" for="fileInput">点击选择文件</label></div>
+        <input id="fileInput" type="file" accept=".txt,text/plain" hidden />
+      </div>
+
+      <div id="bookGrid" class="book-grid"></div>
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-icon">���</div>
+        <p>书库还是空的，导入第一本小说开始吧</p>
+      </div>
+    </section>
+
+    <!-- 书籍详情视图 -->
+    <section id="bookView" class="hidden">
+      <button id="backBtn" class="btn btn-ghost back-btn">← 返回书库</button>
+      <div id="bookHeader" class="book-header"></div>
+      <div class="book-actions">
+        <button id="generateAllBtn" class="btn btn-primary">✨ 生成全部笔记</button>
+      </div>
+      <div id="chapterList" class="chapter-list"></div>
+    </section>
+  </main>
+
+  <!-- 拖拽遮罩 -->
+  <div id="dropOverlay" class="drop-overlay hidden">
+    <div class="drop-overlay-inner">
+      <div class="drop-icon large">���</div>
+      <div>松开导入 TXT 小说</div>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>AI 模型设置</h2>
+        <button class="modal-close" data-close-settings>×</button>
+      </div>
+      <div class="modal-body">
+        <label>模型名称
+          <input id="settingModel" type="text" value="agnes" />
+        </label>
+        <label>接口地址
+          <input id="settingBaseUrl" type="text" placeholder="http://localhost:11434/v1" />
+        </label>
+        <label>API Key
+          <input id="settingApiKey" type="password" placeholder="本地 Ollama 可填 ollama" />
+        </label>
+        <div class="form-row">
+          <label>Temperature
+            <input id="settingTemperature" type="number" step="0.1" min="0" max="2" />
+          </label>
+          <label>最大输出 Tokens
+            <input id="settingMaxTokens" type="number" min="1" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>长章节分片阈值
+            <input id="settingMaxChunkChars" type="number" min="500" />
+          </label>
+          <label>并发任务数
+            <input id="settingWorkers" type="number" min="1" max="16" />
+          </label>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-close-settings>取消</button>
+        <button id="saveSettingsBtn" class="btn btn-primary">保存设置</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
