@@ -173,32 +173,57 @@ fn run_generation_job(
 ) {
     update_job(&jobs_state, &job_id, "running", 10, None);
     let settings = storage.get_settings().unwrap_or_default();
-    // 取前面最多 5 个已完成章节的笔记作为前情提要，保持剧情连贯。
-    let context = if let Ok(book) = storage.get_book(&book_id) {
-        book.chapters
-            .iter()
-            .filter(|c| c.idx < chapter.idx && c.status == "done" && c.note.is_some())
-            .rev()
-            .take(5)
-            .collect::<Vec<_>>()
-            .iter()
-            .rev()
-            .map(|c| {
-                format!("【{}】\n{}", c.title, c.note.clone().unwrap_or_default())
-            })
-            .collect::<Vec<_>>()
-    } else {
-        Vec::new()
-    };
+
+    // 全书记忆：前面所有章节持续浓缩后的全局上下文。
+    let memory = storage.get_book_memory(&book_id).unwrap_or_default();
+    let book = storage.get_book(&book_id).ok();
+    let book_title = book
+        .as_ref()
+        .map(|b| b.title.clone())
+        .unwrap_or_else(|| chapter.title.clone());
+
+    // 最近 3 章原始笔记作为细节补充，避免记忆过度压缩丢失近期信息。
+    let recent_notes = book
+        .as_ref()
+        .map(|b| {
+            b.chapters
+                .iter()
+                .filter(|c| c.idx < chapter.idx && c.status == "done" && c.note.is_some())
+                .rev()
+                .take(3)
+                .collect::<Vec<_>>()
+                .iter()
+                .rev()
+                .map(|c| {
+                    format!("【{}】\n{}", c.title, c.note.clone().unwrap_or_default())
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    let mut context_parts = Vec::new();
+    if !memory.is_empty() {
+        context_parts.push(format!("【全书记忆（前面所有章节的浓缩）】\n{}", memory));
+    }
+    if !recent_notes.is_empty() {
+        context_parts.push(format!("【最近章节细节】\n{}", recent_notes.join("\n\n---\n\n")));
+    }
+
     let result = llm::generate_chapter_note(
         &settings,
         &chapter.title,
         &chapter.text,
-        &context,
+        &context_parts,
     );
     match result {
         Ok(note) => {
             let _ = storage.update_chapter_note(&chapter.id, Some(&note), "done", None);
+            // 生成成功后，把本章笔记合并进全书记忆。
+            if let Ok(new_memory) =
+                llm::update_book_memory(&settings, &book_title, &memory, &note)
+            {
+                let _ = storage.save_book_memory(&book_id, &new_memory.trim());
+            }
             update_job(&jobs_state, &job_id, "done", 100, None);
         }
         Err(err) => {

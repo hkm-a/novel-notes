@@ -9,6 +9,8 @@ use crate::storage::Settings;
 
 const SYSTEM_PROMPT: &str = "你是一个专业的小说读书笔记助手。你的任务是根据用户提供的小说章节原文，生成结构清晰、忠实原文的 Markdown 读书笔记。\n\n要求：\n1. 使用简体中文。\n2. 只输出笔记本身，不要输出寒暄，不要复述原文。\n3. 严格基于原文，不要编造原文中没有出现的人物、情节或台词。\n4. 如果某项确实没有内容，写“无”或“暂无”。\n5. 保持输出格式稳定，方便后续整理。\n";
 
+const MEMORY_SYSTEM_PROMPT: &str = "你是一个小说全书记忆管理员。你的任务是把前面的章节笔记浓缩成一份持续更新的全局记忆，用于后续章节生成时保持剧情连贯。\n\n要求：\n1. 使用简体中文。\n2. 重点保留：主要人物及关系、剧情主线、重要事件、伏笔/悬念、未解决问题、重要设定。\n3. 删除已经结束的临时细节，保留长期有效信息。\n4. 输出简洁的结构化 Markdown，控制在 800 字以内。\n5. 只输出更新后的记忆内容，不要解释。\n";
+
 pub fn generate_chapter_note(
     settings: &Settings,
     title: &str,
@@ -59,6 +61,21 @@ fn build_context_block(context: &[String]) -> String {
     }
     let joined = context.join("\n\n---\n\n");
     format!("【前情提要（之前章节的笔记摘要）】\n{}\n\n", joined)
+}
+
+pub fn update_book_memory(
+    settings: &Settings,
+    book_title: &str,
+    previous_memory: &str,
+    chapter_note: &str,
+) -> Result<String, String> {
+    let user = format!(
+        "请根据已有全局记忆和最新一章的笔记，更新这本小说的全局记忆。\n\n【书名】\n{}\n\n【已有全局记忆】\n{}\n\n【最新一章笔记】\n{}\n\n请输出更新后的全局记忆，不要输出其他内容。",
+        book_title,
+        if previous_memory.is_empty() { "（暂无）" } else { previous_memory },
+        chapter_note
+    );
+    chat_completion(settings, MEMORY_SYSTEM_PROMPT, &user)
 }
 
 pub fn split_text_into_chunks(text: &str, max_chars: usize, overlap_chars: usize) -> Vec<String> {

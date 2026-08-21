@@ -125,6 +125,12 @@ impl Storage {
             CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS book_memory (
+                book_id TEXT PRIMARY KEY,
+                memory TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
             );",
         )
         .map_err(|e| e.to_string())?;
@@ -437,6 +443,30 @@ impl Storage {
             stmt.execute(rusqlite::params![key, value])
                 .map_err(|e| e.to_string())?;
         }
+        Ok(())
+    }
+
+    pub fn get_book_memory(&self, book_id: &str) -> Result<String, String> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        let memory = conn
+            .query_row(
+                "SELECT memory FROM book_memory WHERE book_id = ?1",
+                [book_id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?;
+        Ok(memory.unwrap_or_default())
+    }
+
+    pub fn save_book_memory(&self, book_id: &str, memory: &str) -> Result<(), String> {
+        let ts = now();
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        conn.execute(
+            "INSERT OR REPLACE INTO book_memory (book_id, memory, updated_at) VALUES (?1, ?2, ?3)",
+            rusqlite::params![book_id, memory, ts],
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 }
