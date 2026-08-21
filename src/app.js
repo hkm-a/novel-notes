@@ -6,6 +6,7 @@
     currentBook: null,
     activeJobs: new Map(),
     pollTimer: null,
+    settings: null,
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -416,6 +417,7 @@
   async function openSettings() {
     try {
       const settings = await api("get_settings");
+      state.settings = settings;
       $("#settingModel").value = settings.model || "agnes";
       $("#settingBaseUrl").value = settings.base_url || "";
       $("#settingApiKey").value = settings.api_key || "";
@@ -442,6 +444,9 @@
       max_tokens: parseInt($("#settingMaxTokens").value, 10) || 2000,
       max_chunk_chars: parseInt($("#settingMaxChunkChars").value, 10) || 6000,
       workers: parseInt($("#settingWorkers").value, 10) || 1,
+      timeout: (state.settings && state.settings.timeout) ?? 120,
+      max_retries: (state.settings && state.settings.max_retries) ?? 5,
+      chunk_overlap: (state.settings && state.settings.chunk_overlap) ?? 200,
     };
     try {
       const settings = await api("save_settings", { settings: payload });
