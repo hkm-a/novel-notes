@@ -57,7 +57,7 @@ pub fn split_chapters(text: &str) -> Vec<Chapter> {
     let lines: Vec<&str> = text.split('\n').collect();
 
     let pattern = Regex::new(
-        r"(?i)^\s*(?:第\s*[0-9０-９一二三四五六七八九十百千万零〇]+\s*[章回卷节部集篇](?:\s*[:：、.\-—]?\s*.*)?|(?:chapter|第)\s+(?:[0-9]+|[ivxlcdm]+|one|two|three|four|five|six|seven|eight|nine|ten)(?:\s*[:：.\-—]?\s*.*)?|序章|序言|楔子|引子|前言|尾声|后记|终章|最终章|间章|番外(?:\s*[0-9一二三四五六七八九十百千]+)?(?:\s*[:：.\-—]?\s*.*)?|外传(?:\s*[0-9一二三四五六七八九十百千]+)?(?:\s*[:：.\-—]?\s*.*)?)\s*$",
+        r"(?i)^\s*(?:第\s*[0-9０-９一二三四五六七八九十百千万零〇]+\s*[章回节](?:\s*[:：、.\-—]?\s*.*)?|(?:chapter|第)\s+(?:[0-9]+|[ivxlcdm]+|one|two|three|four|five|six|seven|eight|nine|ten)(?:\s*[:：.\-—]?\s*.*)?|序章|序言|楔子|引子|前言|尾声|后记|终章|最终章|间章|番外(?:\s*[0-9一二三四五六七八九十百千]+)?(?:\s*[:：.\-—]?\s*.*)?|外传(?:\s*[0-9一二三四五六七八九十百千]+)?(?:\s*[:：.\-—]?\s*.*)?)\s*$",
     )
     .expect("invalid chapter regex");
 

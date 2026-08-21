@@ -183,14 +183,44 @@ main {
 }
 
 .book-cover {
+  position: relative;
   height: 120px;
   display: flex;
   align-items: flex-end;
-  padding: 14px 16px;
+  padding: 14px 16px 14px 30px;
   background: linear-gradient(135deg, #33406b, #5b3f7a);
+  overflow: hidden;
 }
 
-.book-cover .cover-title {
+.book-cover-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  background: rgba(0, 0, 0, 0.28);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.book-cover-ornament {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.book-cover .cover-title,
+.book-header-cover .cover-title {
   color: #fff;
   font-size: 20px;
   font-weight: 800;
@@ -245,17 +275,19 @@ main {
 }
 
 .book-header-cover {
+  position: relative;
   width: 130px;
   min-height: 170px;
   border-radius: 14px;
   display: flex;
   align-items: flex-end;
-  padding: 14px;
+  padding: 14px 14px 14px 30px;
   font-size: 20px;
   font-weight: 800;
   color: #fff;
   text-shadow: 0 2px 10px rgba(0,0,0,.35);
   box-shadow: var(--shadow);
+  overflow: hidden;
 }
 
 .book-header-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }

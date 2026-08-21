@@ -132,30 +132,33 @@ pub fn get_book(book_id: String, state: State<'_, AppState>) -> Result<BookDetai
 }
 
 #[tauri::command]
-pub fn import_path(path: String, state: State<'_, AppState>) -> Result<BookDetail, String> {
-    let path = Path::new(&path);
-    if !path.exists() {
-        return Err("文件不存在".into());
-    }
-    let text = chapters::read_text(path)?;
-    let chapters = chapters::split_chapters(&text);
-    if chapters.is_empty() {
-        return Err("未能识别到章节，请检查 TXT 是否包含章节标题".into());
-    }
+pub async fn import_path(path: String, state: State<'_, AppState>) -> Result<BookDetail, String> {
+    let storage = state.storage.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = Path::new(&path);
+        if !path.exists() {
+            return Err("文件不存在".into());
+        }
+        let text = chapters::read_text(path)?;
+        let chapters = chapters::split_chapters(&text);
+        if chapters.is_empty() {
+            return Err("未能识别到章节，请检查 TXT 是否包含章节标题".into());
+        }
 
-    let title = path
-        .file_stem()
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "未命名书籍".into());
+        let title = path
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "未命名书籍".into());
 
-    let rows: Vec<(i64, String, String)> = chapters
-        .iter()
-        .map(|ch| (ch.idx, ch.title.clone(), ch.text.clone()))
-        .collect();
+        let rows: Vec<(i64, String, String)> = chapters
+            .iter()
+            .map(|ch| (ch.idx, ch.title.clone(), ch.text.clone()))
+            .collect();
 
-    state
-        .storage
-        .add_book(&title, "", &path.to_string_lossy(), &rows)
+        storage.add_book(&title, "", &path.to_string_lossy(), &rows)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

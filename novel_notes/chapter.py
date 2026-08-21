@@ -18,7 +18,7 @@ from typing import Iterable, List, Optional, Pattern, Tuple
 DEFAULT_CHAPTER_PATTERN = r"""
     ^\s*
     (?:
-        第\s*[0-9０-９一二三四五六七八九十百千万零〇]+\s*[章回卷节部集篇]
+        第\s*[0-9０-９一二三四五六七八九十百千万零〇]+\s*[章回节]
             (?:\s*[:：、.\-—]?\s*.*)?
       | (?:chapter|第)\s+(?:[0-9]+|[ivxlcdm]+|one|two|three|four|five|six|seven|eight|nine|ten)
             (?:\s*[:：.\-—]?\s*.*)?

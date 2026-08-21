@@ -94,6 +94,8 @@
       card.className = "book-card";
       card.innerHTML = `
         <div class="book-cover" style="background:${paletteFor(book.title)}">
+          <div class="book-cover-spine"></div>
+          <div class="book-cover-ornament">书</div>
           <div class="cover-title">${escapeHtml(book.title)}</div>
         </div>
         <div class="book-body">
@@ -135,7 +137,9 @@
 
     bookHeader.innerHTML = `
       <div class="book-header-cover" style="background:${paletteFor(book.title)}">
-        ${escapeHtml(book.title)}
+        <div class="book-cover-spine"></div>
+        <div class="book-cover-ornament">书</div>
+        <div class="cover-title">${escapeHtml(book.title)}</div>
       </div>
       <div class="book-header-info">
         <h1>${escapeHtml(book.title)}</h1>
