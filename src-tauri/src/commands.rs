@@ -53,45 +53,10 @@ impl AppState {
 
         let storage = self.storage.clone();
         let jobs_state = self.jobs.clone();
-        let settings = storage.get_settings().unwrap_or_default();
-        let chapter = chapter_row.clone();
         let thread_id = id.clone();
 
         std::thread::spawn(move || {
-            update_job(&jobs_state, &thread_id, "running", 10, None);
-            // 取前面最多 5 个已完成章节的笔记作为前情提要，保持剧情连贯。
-            let context = if let Ok(book) = storage.get_book(&book_id) {
-                book.chapters
-                    .iter()
-                    .filter(|c| c.idx < chapter.idx && c.status == "done" && c.note.is_some())
-                    .rev()
-                    .take(5)
-                    .collect::<Vec<_>>()
-                    .iter()
-                    .rev()
-                    .map(|c| {
-                        format!("【{}】\n{}", c.title, c.note.clone().unwrap_or_default())
-                    })
-                    .collect::<Vec<_>>()
-            } else {
-                Vec::new()
-            };
-            let result = llm::generate_chapter_note(
-                &settings,
-                &chapter.title,
-                &chapter.text,
-                &context,
-            );
-            match result {
-                Ok(note) => {
-                    let _ = storage.update_chapter_note(&chapter.id, Some(&note), "done", None);
-                    update_job(&jobs_state, &thread_id, "done", 100, None);
-                }
-                Err(err) => {
-                    let _ = storage.update_chapter_note(&chapter.id, None, "error", Some(&err));
-                    update_job(&jobs_state, &thread_id, "error", 100, Some(&err));
-                }
-            }
+            run_generation_job(storage, jobs_state, thread_id, book_id, chapter_row);
         });
 
         Ok(self
@@ -101,6 +66,65 @@ impl AppState {
             .get(&id)
             .cloned()
             .ok_or_else(|| "任务创建失败".to_string())?)
+    }
+
+    /// 生成全部时按章节顺序逐个执行，确保后面的章节能拿到前面章节的笔记作为上下文。
+    fn submit_all_sequential(
+        &self,
+        book_id: String,
+        rows: Vec<ChapterRow>,
+    ) -> Result<Vec<Job>, String> {
+        let mut jobs = self.jobs.lock().map_err(|e| e.to_string())?;
+        let mut created: Vec<(String, ChapterRow)> = Vec::new();
+        for row in rows {
+            let busy = jobs.values().any(|j| {
+                j.chapter_id == row.id && (j.status == "queued" || j.status == "running")
+            });
+            if busy {
+                continue;
+            }
+            let id = Uuid::new_v4().simple().to_string()[..12].to_string();
+            jobs.insert(
+                id.clone(),
+                Job {
+                    id: id.clone(),
+                    book_id: book_id.clone(),
+                    chapter_id: row.id.clone(),
+                    chapter_title: row.title.clone(),
+                    status: "queued".into(),
+                    progress: 0,
+                    error: None,
+                },
+            );
+            created.push((id, row));
+        }
+        drop(jobs);
+
+        if created.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let storage = self.storage.clone();
+        let jobs_state = self.jobs.clone();
+        let book_id_for_thread = book_id.clone();
+        let created_for_thread = created.clone();
+        std::thread::spawn(move || {
+            for (job_id, row) in created_for_thread {
+                run_generation_job(
+                    storage.clone(),
+                    jobs_state.clone(),
+                    job_id,
+                    book_id_for_thread.clone(),
+                    row,
+                );
+            }
+        });
+
+        let jobs = self.jobs.lock().map_err(|e| e.to_string())?;
+        Ok(created
+            .iter()
+            .filter_map(|(id, _)| jobs.get(id).cloned())
+            .collect())
     }
 
     fn active_jobs(&self) -> Result<Vec<Job>, String> {
@@ -135,6 +159,51 @@ fn update_job(
             job.status = status.to_string();
             job.progress = progress;
             job.error = error.map(|s| s.to_string());
+        }
+    }
+}
+
+
+fn run_generation_job(
+    storage: Arc<Storage>,
+    jobs_state: Arc<Mutex<HashMap<String, Job>>>,
+    job_id: String,
+    book_id: String,
+    chapter: ChapterRow,
+) {
+    update_job(&jobs_state, &job_id, "running", 10, None);
+    let settings = storage.get_settings().unwrap_or_default();
+    // 取前面最多 5 个已完成章节的笔记作为前情提要，保持剧情连贯。
+    let context = if let Ok(book) = storage.get_book(&book_id) {
+        book.chapters
+            .iter()
+            .filter(|c| c.idx < chapter.idx && c.status == "done" && c.note.is_some())
+            .rev()
+            .take(5)
+            .collect::<Vec<_>>()
+            .iter()
+            .rev()
+            .map(|c| {
+                format!("【{}】\n{}", c.title, c.note.clone().unwrap_or_default())
+            })
+            .collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+    let result = llm::generate_chapter_note(
+        &settings,
+        &chapter.title,
+        &chapter.text,
+        &context,
+    );
+    match result {
+        Ok(note) => {
+            let _ = storage.update_chapter_note(&chapter.id, Some(&note), "done", None);
+            update_job(&jobs_state, &job_id, "done", 100, None);
+        }
+        Err(err) => {
+            let _ = storage.update_chapter_note(&chapter.id, None, "error", Some(&err));
+            update_job(&jobs_state, &job_id, "error", 100, Some(&err));
         }
     }
 }
@@ -208,7 +277,7 @@ pub fn generate_chapter(
 #[tauri::command]
 pub fn generate_all(book_id: String, state: State<'_, AppState>) -> Result<Vec<Job>, String> {
     let book = state.storage.get_book(&book_id)?;
-    let mut jobs = Vec::new();
+    let mut rows = Vec::new();
     for chapter in &book.chapters {
         if chapter.status == "done" {
             continue;
@@ -220,10 +289,9 @@ pub fn generate_all(book_id: String, state: State<'_, AppState>) -> Result<Vec<J
             .storage
             .chapter_row(&chapter.id)?
             .ok_or_else(|| "章节不存在".to_string())?;
-        let job = state.submit_job(book_id.clone(), row)?;
-        jobs.push(job);
+        rows.push(row);
     }
-    Ok(jobs)
+    state.submit_all_sequential(book_id, rows)
 }
 
 #[tauri::command]
