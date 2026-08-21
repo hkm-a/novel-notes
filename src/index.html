@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Novel Notes · 小说笔记工作台</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="brand-icon">���</span>
+      <span class="brand-icon">���</span>
       <span>Novel Notes</span>
     </div>
     <div class="topbar-actions">
@@ -27,7 +27,7 @@
       </div>
 
       <div id="dropZone" class="drop-zone">
-        <div class="drop-icon">���</div>
+        <div class="drop-icon">���</div>
         <div class="drop-title">拖拽 TXT 小说到这里</div>
         <div class="drop-sub">或 <label class="linklike" for="fileInput">点击选择文件</label></div>
         <input id="fileInput" type="file" accept=".txt,text/plain" hidden />
@@ -35,7 +35,7 @@
 
       <div id="bookGrid" class="book-grid"></div>
       <div id="emptyState" class="empty-state hidden">
-        <div class="empty-icon">���</div>
+        <div class="empty-icon">���</div>
         <p>书库还是空的，导入第一本小说开始吧</p>
       </div>
     </section>
@@ -54,7 +54,7 @@
   <!-- 拖拽遮罩 -->
   <div id="dropOverlay" class="drop-overlay hidden">
     <div class="drop-overlay-inner">
-      <div class="drop-icon large">���</div>
+      <div class="drop-icon large">���</div>
       <div>松开导入 TXT 小说</div>
     </div>
   </div>
@@ -102,6 +102,6 @@
 
   <div id="toastContainer" class="toast-container"></div>
 
-  <script src="/static/app.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
