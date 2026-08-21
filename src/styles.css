@@ -470,6 +470,42 @@ main {
   font-size: 13px;
 }
 
+.markdown-table-wrap {
+  overflow-x: auto;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.chapter-note table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.chapter-note th,
+.chapter-note td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.chapter-note th {
+  background: rgba(108, 140, 255, 0.12);
+  color: #dfe6ff;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chapter-note tr:last-child td {
+  border-bottom: none;
+}
+
+.chapter-note tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .chapter-error {
   margin-top: 12px;
   padding: 10px 12px;

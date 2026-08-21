@@ -455,6 +455,31 @@
     return out;
   }
 
+  function parseTableRow(row) {
+    let line = row.trim();
+    if (line.startsWith("|")) line = line.slice(1);
+    if (line.endsWith("|")) line = line.slice(0, -1);
+    return line.split("|").map((cell) => cell.trim());
+  }
+
+  function renderTable(rows) {
+    if (!rows.length) return "";
+    const header = parseTableRow(rows[0]);
+    let html = `<div class="markdown-table-wrap"><table><thead><tr>`;
+    for (const cell of header) {
+      html += `<th>${inlineMarkdown(cell)}</th>`;
+    }
+    html += `</tr></thead><tbody>`;
+    for (let r = 1; r < rows.length; r++) {
+      const cells = parseTableRow(rows[r]);
+      // 跳过 Markdown 分隔行 |---|---|
+      if (r === 1 && cells.every((c) => /^:?-{2,}:?$/.test(c))) continue;
+      html += `<tr>${cells.map((c) => `<td>${inlineMarkdown(c)}</td>`).join("")}</tr>`;
+    }
+    html += `</tbody></table></div>`;
+    return html;
+  }
+
   function renderMarkdown(md) {
     const lines = String(md || "").split(/\r?\n/);
     let html = "";
@@ -469,10 +494,21 @@
       }
     };
 
-    for (const raw of lines) {
-      const line = raw.trim();
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
       if (!line) {
         closeList();
+        continue;
+      }
+
+      if (line.startsWith("|")) {
+        closeList();
+        const tableRows = [line];
+        while (i + 1 < lines.length && lines[i + 1].trim().startsWith("|")) {
+          i++;
+          tableRows.push(lines[i].trim());
+        }
+        html += renderTable(tableRows);
         continue;
       }
 
@@ -515,6 +551,7 @@
     closeList();
     return html;
   }
+
 
   /* ---------------- Settings ---------------- */
 
