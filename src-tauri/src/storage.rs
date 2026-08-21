@@ -81,6 +81,7 @@ pub struct BookDetail {
 #[derive(Debug, Clone)]
 pub struct ChapterRow {
     pub id: String,
+    pub idx: i64,
     pub title: String,
     pub text: String,
 }
@@ -297,13 +298,14 @@ impl Storage {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
         let row = conn
             .query_row(
-                "SELECT id, title, text FROM chapters WHERE id = ?1",
+                "SELECT id, idx, title, text FROM chapters WHERE id = ?1",
                 [id],
                 |row| {
                     Ok(ChapterRow {
                         id: row.get(0)?,
-                        title: row.get(1)?,
-                        text: row.get(2)?,
+                        idx: row.get(1)?,
+                        title: row.get(2)?,
+                        text: row.get(3)?,
                     })
                 },
             )

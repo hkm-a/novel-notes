@@ -59,10 +59,28 @@ impl AppState {
 
         std::thread::spawn(move || {
             update_job(&jobs_state, &thread_id, "running", 10, None);
+            // 取前面最多 5 个已完成章节的笔记作为前情提要，保持剧情连贯。
+            let context = if let Ok(book) = storage.get_book(&book_id) {
+                book.chapters
+                    .iter()
+                    .filter(|c| c.idx < chapter.idx && c.status == "done" && c.note.is_some())
+                    .rev()
+                    .take(5)
+                    .collect::<Vec<_>>()
+                    .iter()
+                    .rev()
+                    .map(|c| {
+                        format!("【{}】\n{}", c.title, c.note.clone().unwrap_or_default())
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            };
             let result = llm::generate_chapter_note(
                 &settings,
                 &chapter.title,
                 &chapter.text,
+                &context,
             );
             match result {
                 Ok(note) => {

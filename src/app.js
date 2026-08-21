@@ -373,6 +373,8 @@
   function inlineMarkdown(text) {
     let out = escapeHtml(text);
     out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    out = out.replace(/~~([^~]+)~~/g, "<del>$1</del>");
     out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
     return out;
   }
@@ -381,11 +383,13 @@
     const lines = String(md || "").split(/\r?\n/);
     let html = "";
     let inList = false;
+    let listType = null;
 
     const closeList = () => {
       if (inList) {
-        html += "</ul>";
+        html += listType === "ol" ? "</ol>" : "</ul>";
         inList = false;
+        listType = null;
       }
     };
 
@@ -395,18 +399,38 @@
         closeList();
         continue;
       }
+
       if (/^###\s+/.test(line)) {
         closeList();
         html += `<h4>${inlineMarkdown(line.replace(/^###\s+/, ""))}</h4>`;
       } else if (/^##\s+/.test(line)) {
         closeList();
         html += `<h3>${inlineMarkdown(line.replace(/^##\s+/, ""))}</h3>`;
+      } else if (/^#\s+/.test(line)) {
+        closeList();
+        html += `<h2>${inlineMarkdown(line.replace(/^#\s+/, ""))}</h2>`;
+      } else if (/^>\s?/.test(line)) {
+        closeList();
+        html += `<blockquote>${inlineMarkdown(line.replace(/^>\s?/, ""))}</blockquote>`;
+      } else if (/^\s*[-*_]\s*[-*_\s]*[-*_]\s*$/.test(line)) {
+        closeList();
+        html += "<hr />";
       } else if (/^[-*]\s+/.test(line)) {
-        if (!inList) {
+        if (!inList || listType !== "ul") {
+          closeList();
           html += "<ul>";
           inList = true;
+          listType = "ul";
         }
         html += `<li>${inlineMarkdown(line.replace(/^[-*]\s+/, ""))}</li>`;
+      } else if (/^\d+\.\s+/.test(line)) {
+        if (!inList || listType !== "ol") {
+          closeList();
+          html += "<ol>";
+          inList = true;
+          listType = "ol";
+        }
+        html += `<li>${inlineMarkdown(line.replace(/^\d+\.\s+/, ""))}</li>`;
       } else {
         closeList();
         html += `<p>${inlineMarkdown(line)}</p>`;

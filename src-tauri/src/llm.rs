@@ -13,11 +13,14 @@ pub fn generate_chapter_note(
     settings: &Settings,
     title: &str,
     text: &str,
+    context: &[String],
 ) -> Result<String, String> {
+    let context_block = build_context_block(context);
+
     if text.chars().count() <= settings.max_chunk_chars {
         let user = format!(
-            "请阅读以下小说章节原文，并生成结构化读书笔记。\n\n【章节标题】\n{}\n\n【原文】\n{}",
-            title, text
+            "请阅读以下小说章节原文，并生成结构化读书笔记。\n\n【章节标题】\n{}\n\n{}【原文】\n{}",
+            title, context_block, text
         );
         return chat_completion(settings, SYSTEM_PROMPT, &user);
     }
@@ -26,8 +29,9 @@ pub fn generate_chapter_note(
     let mut summaries = Vec::new();
     for (i, chunk) in chunks.iter().enumerate() {
         let user = format!(
-            "下面是小说的一个章节片段。请生成该片段的简明摘要。\n\n【章节标题】\n{}\n\n【片段位置】\n第 {} / {} 个片段\n\n【片段原文】\n{}\n\n请输出以下内容（Markdown 格式）：\n- 本片段涉及的主要人物\n- 本片段发生的关键事件\n- 出现的伏笔、线索或悬念\n- 值得记住的台词（如有）\n- 一句话概括本片段\n\n不要输出完整章节笔记，只输出这个片段的摘要。",
+            "下面是小说的一个章节片段。请生成该片段的简明摘要。\n\n【章节标题】\n{}\n\n{}【片段位置】\n第 {} / {} 个片段\n\n【片段原文】\n{}\n\n请输出以下内容（Markdown 格式）：\n- 本片段涉及的主要人物\n- 本片段发生的关键事件\n- 出现的伏笔、线索或悬念\n- 值得记住的台词（如有）\n- 一句话概括本片段\n\n不要输出完整章节笔记，只输出这个片段的摘要。",
             title,
+            context_block,
             i + 1,
             chunks.len(),
             chunk
@@ -43,10 +47,18 @@ pub fn generate_chapter_note(
         .join("\n\n---\n\n");
 
     let user = format!(
-        "下面是某小说章节的分片摘要。请把这些摘要综合成一份完整的章节读书笔记。\n\n【章节标题】\n{}\n\n【分片摘要】\n{}\n\n请按以下固定结构输出 Markdown：\n\n## 一句话概括\n\n## 本章摘要\n\n## 主要人物\n\n## 剧情推进 / 关键事件\n\n## 伏笔 / 线索\n\n## 关键台词\n\n## 本章疑问\n\n要求：\n- 把各分片的信息合并、去重、按时间顺序整理。\n- 不要编造分片摘要中没有的内容。\n- 某项没有内容时写“无”或“暂无”。",
-        title, joined
+        "下面是某小说章节的分片摘要。请把这些摘要综合成一份完整的章节读书笔记。\n\n【章节标题】\n{}\n\n{}【分片摘要】\n{}\n\n请按以下固定结构输出 Markdown：\n\n## 一句话概括\n\n## 本章摘要\n\n## 主要人物\n\n## 剧情推进 / 关键事件\n\n## 伏笔 / 线索\n\n## 关键台词\n\n## 本章疑问\n\n要求：\n- 把各分片的信息合并、去重、按时间顺序整理。\n- 结合前情提要，保持人物关系、剧情发展和伏笔的连贯性。\n- 不要编造分片摘要或前情提要中没有的内容。\n- 某项没有内容时写“无”或“暂无”。",
+        title, context_block, joined
     );
     chat_completion(settings, SYSTEM_PROMPT, &user)
+}
+
+fn build_context_block(context: &[String]) -> String {
+    if context.is_empty() {
+        return String::new();
+    }
+    let joined = context.join("\n\n---\n\n");
+    format!("【前情提要（之前章节的笔记摘要）】\n{}\n\n", joined)
 }
 
 pub fn split_text_into_chunks(text: &str, max_chars: usize, overlap_chars: usize) -> Vec<String> {
